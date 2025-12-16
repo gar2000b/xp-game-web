@@ -2,6 +2,8 @@
 
 A retro 80s arcade-style web application built with Node.js and Fastify, featuring a stunning welcome screen inspired by classic arcade games and Star Wars aesthetics.
 
+![Welcome Screen](images/welcome.png)
+
 ## Features
 
 - 🎮 **Retro Arcade Design**: Beautiful 80s-style welcome screen with neon colors and pixel fonts
