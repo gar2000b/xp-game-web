@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="32" height="24" tilewidth="32" tileheight="32" nextobjectid="11">
+ <tileset firstgid="1" name="City-Building" tilewidth="32" tileheight="32" tilecount="16" columns="4">
+  <image source="City-Building.png" width="128" height="128"/>
+ </tileset>
+ <tileset firstgid="17" name="pad" tilewidth="32" tileheight="23" tilecount="4" columns="4">
+  <image source="pad.png" width="128" height="23"/>
+ </tileset>
+ <imagelayer name="Image Layer 1">
+  <image source="City-Background.png" width="1024" height="768"/>
+ </imagelayer>
+ <objectgroup name="Platforms">
+  <object id="7" name="Platform 3" x="822" y="234" width="87" height="23"/>
+  <object id="9" name="Platform 2" x="439" y="490" width="212" height="23"/>
+  <object id="10" name="Platform 1" x="121" y="362" width="145" height="23"/>
+ </objectgroup>
+ <layer name="Tile Layer 1" width="32" height="24">
+  <data encoding="base64" compression="zlib">
+   eJzt0jkKwDAMRFFn3/fc/6yZMgyxpUJgCBL8ygIVzyH4+Pj8eQ50ogvdGe4XqEQVqjPcb1CLOtRnuD+gEU1oTuy9nSy9FrSiDe2JPXay8tL6s5OVl9afnSQv7Wj92Snm9fVPUv/F2p/3JF9rf96TfK39eU/ytfbnPcnX/d0/9v4A5csICg==
+  </data>
+ </layer>
+</map>

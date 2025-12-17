@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Browser TTS Demo (Web Speech API)</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 24px; max-width: 820px; }
+    .row { display: grid; grid-template-columns: 180px 1fr; gap: 12px; align-items: center; margin: 10px 0; }
+    textarea { width: 100%; min-height: 90px; padding: 10px; }
+    select, input[type="range"], button { width: 100%; }
+    .val { font-variant-numeric: tabular-nums; text-align: right; }
+    .buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 14px; }
+    .hint { color: #555; font-size: 0.95rem; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <h2>Text-to-Speech (Web Speech API)</h2>
+
+  <div class="row">
+    <label for="text">Text</label>
+    <textarea id="text">Hello! Try changing voice, pitch, rate, and volume.</textarea>
+  </div>
+
+  <div class="row">
+    <label for="voice">Voice</label>
+    <select id="voice"></select>
+  </div>
+
+  <div class="row">
+    <label for="lang">Language (filter)</label>
+    <select id="lang">
+      <option value="">All languages</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <label for="pitch">Pitch</label>
+    <div style="display:grid; grid-template-columns: 1fr 70px; gap: 10px; align-items:center;">
+      <input id="pitch" type="range" min="0" max="2" step="0.01" value="1.00" />
+      <div class="val" id="pitchVal">1.00</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="rate">Rate</label>
+    <div style="display:grid; grid-template-columns: 1fr 70px; gap: 10px; align-items:center;">
+      <input id="rate" type="range" min="0.1" max="3" step="0.01" value="1.00" />
+      <div class="val" id="rateVal">1.00</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <label for="volume">Volume</label>
+    <div style="display:grid; grid-template-columns: 1fr 70px; gap: 10px; align-items:center;">
+      <input id="volume" type="range" min="0" max="1" step="0.01" value="1.00" />
+      <div class="val" id="volumeVal">1.00</div>
+    </div>
+  </div>
+
+  <div class="buttons">
+    <button id="speakBtn">Speak</button>
+    <button id="pauseBtn">Pause</button>
+    <button id="stopBtn">Stop</button>
+  </div>
+
+  <p class="hint">
+    Notes: Voice availability depends on the user’s device/browser. Voices load asynchronously, so the dropdown may populate a moment after page load.
+  </p>
+
+  <details style="margin-top: 20px;">
+    <summary style="cursor: pointer; font-weight: bold;">Debug: View all voice properties</summary>
+    <pre id="voiceDebug" style="background: #f5f5f5; padding: 10px; margin-top: 10px; overflow: auto; max-height: 400px; font-size: 0.85rem;"></pre>
+  </details>
+
+<script>
+(() => {
+  const synth = window.speechSynthesis;
+
+  const textEl   = document.getElementById('text');
+  const voiceEl  = document.getElementById('voice');
+  const langEl   = document.getElementById('lang');
+
+  const pitchEl  = document.getElementById('pitch');
+  const rateEl   = document.getElementById('rate');
+  const volEl    = document.getElementById('volume');
+
+  const pitchVal = document.getElementById('pitchVal');
+  const rateVal  = document.getElementById('rateVal');
+  const volVal   = document.getElementById('volumeVal');
+
+  const speakBtn = document.getElementById('speakBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const stopBtn  = document.getElementById('stopBtn');
+
+  let allVoices = [];
+  let currentUtterance = null;
+
+  function updateSliderLabels() {
+    pitchVal.textContent = Number(pitchEl.value).toFixed(2);
+    rateVal.textContent  = Number(rateEl.value).toFixed(2);
+    volVal.textContent   = Number(volEl.value).toFixed(2);
+  }
+
+  function uniqueSorted(arr) {
+    return [...new Set(arr)].sort((a,b) => a.localeCompare(b));
+  }
+
+  function populateLanguageFilter() {
+    const langs = uniqueSorted(allVoices.map(v => v.lang).filter(Boolean));
+    langEl.innerHTML = `<option value="">All languages</option>` +
+      langs.map(l => `<option value="${l}">${l}</option>`).join('');
+  }
+
+  function detectGender(voiceName) {
+    const name = voiceName.toLowerCase();
+    
+    // Explicit gender markers (highest priority)
+    if (/female|woman|girl/i.test(name)) {
+      return 'Female';
+    }
+    if (/male|man|boy/i.test(name)) {
+      return 'Male';
+    }
+    
+    // Microsoft voices - use name patterns (comprehensive list from actual voices)
+    if (/microsoft/i.test(name)) {
+      // Microsoft female names (extracted from your voice list)
+      if (/aarohi|aigul|alina|amal|amala|amany|amina|ana|anila|aria|ariane|athina|ava|aysha|banu|belkys|blessica|camila|catalina|charline|clara|colette|dalia|dena|denise|dhwani|dilara|eka|elena|eloise|elsa|elvira|emel|emily|emma|everita|ezinne|fatima|fenna|francisca|gabrijela|gadis|gagan|grace|gudrun|gul|hila|hiugaai|hiumaan|hoaimy|hsiaochen|hsiaoyu|iman|imani|ingrid|isabella|kalina|kani|karina|karla|katja|keomany|laila|latifa|layla|leah|libby|linda|lorena|luna|madina|maisie|margarita|maria|marija|marta|maryam|mekdes|michelle|molly|mouna|nabanita|nanami|natasha|neerja|nia|nilar|noemi|noora|noura|ona|orla|pallavi|paloma|paola|pernille|petra|polina|premwadee|ramona|rana|raquel|reem|rehema|rosa|sabela|salma|salome|sana|sapna|saranya|shruti|siti|sobhana|sofia|sofie|sonia|sophie|sreymom|sunhi|svetlana|swara|sylvie|tania|tanishaa|teresa|thalita|thando|thilini|tuti|ubax|uzma|valentina|venba|vesna|viktoria|vivienne|vlasta|xiaoxiao|xiaoyi|ximena|yan|yasmin|yesui|yolanda|yunjhe|yunxia|zariyah|zira|zofia|zuri/i.test(name)) {
+        return 'Female';
+      }
+      // Microsoft male names (extracted from your voice list)
+      if (/abdullah|alex|alonso|alvaro|andrew|andres|angelo|antoine|antonin|antonio|ardi|arnaud|asad|babek|bashkar|bassel|bataa|borislav|brian|carlos|chanthavong|chilemba|christopher|colm|connor|conrad|daudi|daulet|david|diego|dimas|dmitry|duarte|emil|emilio|eric|fabrice|fahed|farid|federico|finn|florian|gerard|giorgi|giuseppe|gonzalo|goran|gunnar|guy|hamdan|hamed|harri|hedi|henri|ilir|injoon|ismael|jajang|jamal|james|jan|javier|jean|jeppe|jonas|jorge|joseph|juan|kumar|laith|leonas|liam|lorenzo|luis|lukas|luke|maarten|madhur|manohar|manuel|marcelo|marek|mario|mark|mateo|mattias|midhun|mitchell|moaz|mohan|muuse|namminh|nestoras|nicholas|nils|niranjan|niwat|omar|osman|ostap|pradeep|rafiki|rami|richard|roberto|rodrigo|roger|roi|rok|ryan|sagar|saleh|salman|sam|sardor|sebastian|shakir|srecko|steffan|surya|taim|tamas|taqqiq|themba|thierry|thiha|thomas|tomas|valluvar|victor|wanlung|wayne|willem|william|xiaobei|xiaoni|yunjian|yunxi|yunyang/i.test(name)) {
+        return 'Male';
+      }
+    }
+    
+    // Google voices - pattern matching based on actual data
+    if (/google/i.test(name)) {
+      // Google voices with explicit gender markers
+      if (/female/i.test(name)) {
+        return 'Female';
+      }
+      if (/male/i.test(name)) {
+        return 'Male';
+      }
+      // Specific Google voice exceptions based on your data
+      // "Google español" (without "de Estados Unidos") is Male
+      if (/google español/i.test(name) && !/estados unidos/i.test(name)) {
+        return 'Male';
+      }
+      // All other Google voices default to Female (based on your data pattern)
+      return 'Female';
+    }
+    
+    // Generic name-based detection (fallback for other providers)
+    if (/samantha|susan|karen|zira|hazel|heather|hannah|linda|melissa|michelle|nancy|sarah|tessa|victoria|alice|amara|anna|aria|ashley|audrey|ava|bella|catherine|chloe|claire|diana|elena|emma|evelyn|fiona|grace|isabella|julia|kate|layla|leah|lily|lucy|maya|mia|natalie|olivia|penelope|rachel|sophia|stella|violet|zoe/i.test(name)) {
+      return 'Female';
+    }
+    if (/david|james|mark|richard|thomas|william|alex|daniel|george|john|paul|peter|robert|steven|tom/i.test(name)) {
+      return 'Male';
+    }
+    
+    return 'Unknown';
+  }
+
+  function voiceLabel(v) {
+    const tags = [];
+    if (/Google/i.test(v.name)) tags.push('Google');
+    if (/Microsoft/i.test(v.name)) tags.push('Microsoft');
+    if (v.default) tags.push('Default');
+    const gender = detectGender(v.name);
+    if (gender !== 'Unknown') tags.push(gender);
+    const tagStr = tags.length ? ` — ${tags.join(', ')}` : '';
+    return `${v.name} (${v.lang})${tagStr}`;
+  }
+
+  function populateVoiceDropdown() {
+    const filterLang = langEl.value;
+    let voices = filterLang ? allVoices.filter(v => v.lang === filterLang) : allVoices;
+
+    // Filter out voices with unknown gender - only show voices with detected gender
+    voices = voices.filter(v => detectGender(v.name) !== 'Unknown');
+
+    // Prefer Google voices first in the dropdown (nicer quality in Chrome)
+    voices.sort((a, b) => {
+      const ag = /Google/i.test(a.name) ? 0 : 1;
+      const bg = /Google/i.test(b.name) ? 0 : 1;
+      if (ag !== bg) return ag - bg;
+      return voiceLabel(a).localeCompare(voiceLabel(b));
+    });
+
+    voiceEl.innerHTML = voices
+      .map((v, idx) => `<option value="${idx}">${voiceLabel(v)}</option>`)
+      .join('');
+
+    // Auto-select: best Google English, else default, else first
+    let pickIndex = voices.findIndex(v => /Google/i.test(v.name) && /^en/i.test(v.lang));
+    if (pickIndex < 0) pickIndex = voices.findIndex(v => v.default);
+    if (pickIndex < 0) pickIndex = 0;
+
+    voiceEl.value = String(pickIndex);
+    voiceEl.dataset.filteredVoices = JSON.stringify(voices.map(v => ({
+      name: v.name, lang: v.lang, default: v.default, voiceURI: v.voiceURI
+    })));
+    voiceEl._voices = voices; // stash actual objects (safe in-page)
+  }
+
+  function loadVoices() {
+    allVoices = synth.getVoices() || [];
+    if (!allVoices.length) return;
+
+    populateLanguageFilter();
+    populateVoiceDropdown();
+    updateVoiceDebug();
+  }
+
+  function updateVoiceDebug() {
+    const debugEl = document.getElementById('voiceDebug');
+    if (!debugEl) return;
+    
+    const voiceInfo = allVoices.map(v => {
+      const props = {};
+      // List all available properties
+      for (let key in v) {
+        try {
+          props[key] = v[key];
+        } catch (e) {
+          props[key] = '[unable to read]';
+        }
+      }
+      return {
+        name: v.name,
+        gender: detectGender(v.name),
+        properties: props
+      };
+    });
+    
+    debugEl.textContent = JSON.stringify(voiceInfo, null, 2);
+  }
+
+  function stopSpeaking() {
+    synth.cancel();
+    currentUtterance = null;
+    pauseBtn.textContent = 'Pause';
+  }
+
+  function speak() {
+    const text = textEl.value.trim();
+    if (!text) return;
+
+    stopSpeaking(); // ensure clean start
+
+    const u = new SpeechSynthesisUtterance(text);
+
+    const voices = voiceEl._voices || [];
+    const idx = Number(voiceEl.value);
+    if (voices[idx]) u.voice = voices[idx];
+
+    u.pitch  = Number(pitchEl.value);
+    u.rate   = Number(rateEl.value);
+    u.volume = Number(volEl.value);
+
+    u.onend = () => {
+      currentUtterance = null;
+      pauseBtn.textContent = 'Pause';
+    };
+
+    currentUtterance = u;
+    synth.speak(u);
+  }
+
+  function togglePauseResume() {
+    if (!synth.speaking) return;
+
+    if (synth.paused) {
+      synth.resume();
+      pauseBtn.textContent = 'Pause';
+    } else {
+      synth.pause();
+      pauseBtn.textContent = 'Resume';
+    }
+  }
+
+  // Wire up UI
+  pitchEl.addEventListener('input', updateSliderLabels);
+  rateEl.addEventListener('input', updateSliderLabels);
+  volEl.addEventListener('input', updateSliderLabels);
+
+  langEl.addEventListener('change', populateVoiceDropdown);
+
+  speakBtn.addEventListener('click', speak);
+  pauseBtn.addEventListener('click', togglePauseResume);
+  stopBtn.addEventListener('click', stopSpeaking);
+
+  updateSliderLabels();
+
+  // Voices load async in many browsers
+  synth.onvoiceschanged = loadVoices;
+  loadVoices(); // try immediately too
+
+  // Optional: press Ctrl+Enter to speak
+  textEl.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'Enter') speak();
+  });
+})();
+</script>
+
+</body>
+</html>

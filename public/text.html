@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Speech Recognition Demo (Web Speech API)</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, Arial, sans-serif;
+      margin: 0;
+      padding: 24px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #666;
+      font-size: 0.95rem;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 16px;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 16px;
+      align-items: center;
+      margin: 16px 0;
+    }
+    .button-group {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #recordBtn {
+      background: #dc3545;
+      color: white;
+      font-size: 1.1rem;
+      padding: 14px 32px;
+      min-width: 160px;
+    }
+    #recordBtn:hover:not(:disabled) {
+      background: #c82333;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+    }
+    #recordBtn.recording {
+      background: #28a745;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    #recordBtn.recording:hover:not(:disabled) {
+      background: #218838;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #5a6268;
+    }
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+    .btn-success:hover:not(:disabled) {
+      background: #218838;
+    }
+    select, input[type="checkbox"] {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    select {
+      width: 100%;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status {
+      padding: 12px;
+      border-radius: 6px;
+      margin: 16px 0;
+      font-size: 0.95rem;
+    }
+    .status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border-left: 4px solid #17a2b8;
+    }
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border-left: 4px solid #dc3545;
+    }
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border-left: 4px solid #28a745;
+    }
+    .transcription {
+      min-height: 120px;
+      padding: 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      background: #fafafa;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      margin: 16px 0;
+    }
+    .transcription.empty {
+      color: #999;
+      font-style: italic;
+    }
+    .interim {
+      color: #666;
+      font-style: italic;
+      opacity: 0.7;
+    }
+    .final {
+      color: #333;
+    }
+    .hint {
+      color: #666;
+      font-size: 0.9rem;
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+    .recording-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      background: #dc3545;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .recording-indicator.hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Speech Recognition Demo</h1>
+  <p class="subtitle">Convert your speech to text using the Web Speech API</p>
+
+  <div class="card">
+    <div class="controls">
+      <label for="lang">Language</label>
+      <select id="lang"></select>
+    </div>
+
+    <div class="controls">
+      <label></label>
+      <div class="checkbox-group">
+        <input type="checkbox" id="continuous" checked />
+        <label for="continuous">Continuous recognition</label>
+      </div>
+    </div>
+
+    <div class="controls">
+      <label></label>
+      <div class="checkbox-group">
+        <input type="checkbox" id="interimResults" checked />
+        <label for="interimResults">Show interim results</label>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin: 24px 0;">
+      <button id="recordBtn">
+        <span class="recording-indicator hidden"></span>
+        Start Recording
+      </button>
+    </div>
+
+    <div id="status"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top: 0; font-size: 1.2rem; color: #333;">Transcription</h2>
+    <div id="transcription" class="transcription empty">No transcription yet. Click "Start Recording" to begin.</div>
+    
+    <div class="button-group" style="margin-top: 16px;">
+      <button class="btn-secondary" id="clearBtn">Clear</button>
+      <button class="btn-success" id="copyBtn">Copy to Clipboard</button>
+    </div>
+  </div>
+
+  <p class="hint">
+    <strong>Note:</strong> Speech Recognition requires a microphone and works best in Chrome/Edge browsers. 
+    Make sure to allow microphone access when prompted. The recognition may take a moment to start.
+  </p>
+
+<script>
+(() => {
+  // Check for browser support
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  
+  if (!SpeechRecognition) {
+    document.getElementById('status').innerHTML = 
+      '<div class="status error">Speech Recognition is not supported in this browser. Please use Chrome or Edge.</div>';
+    document.getElementById('recordBtn').disabled = true;
+    return;
+  }
+
+  const recordBtn = document.getElementById('recordBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const langEl = document.getElementById('lang');
+  const continuousEl = document.getElementById('continuous');
+  const interimResultsEl = document.getElementById('interimResults');
+  const transcriptionEl = document.getElementById('transcription');
+  const statusEl = document.getElementById('status');
+
+  let recognition = null;
+  let isRecording = false;
+  let finalTranscript = '';
+  let interimTranscript = '';
+
+  // Initialize recognition
+  function initRecognition() {
+    recognition = new SpeechRecognition();
+    recognition.lang = langEl.value || 'en-US';
+    recognition.continuous = continuousEl.checked;
+    recognition.interimResults = interimResultsEl.checked;
+
+    recognition.onstart = () => {
+      isRecording = true;
+      recordBtn.textContent = 'Stop Recording';
+      recordBtn.classList.add('recording');
+      recordBtn.querySelector('.recording-indicator').classList.remove('hidden');
+      updateStatus('Recording started. Speak now...', 'info');
+      finalTranscript = '';
+      interimTranscript = '';
+    };
+
+    recognition.onresult = (event) => {
+      interimTranscript = '';
+      finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+
+      updateTranscription();
+    };
+
+    recognition.onerror = (event) => {
+      let errorMsg = 'Recognition error occurred.';
+      if (event.error === 'no-speech') {
+        errorMsg = 'No speech detected. Try speaking again.';
+      } else if (event.error === 'audio-capture') {
+        errorMsg = 'No microphone found. Please check your microphone.';
+      } else if (event.error === 'not-allowed') {
+        errorMsg = 'Microphone access denied. Please allow microphone access.';
+      } else if (event.error === 'network') {
+        errorMsg = 'Network error. Please check your connection.';
+      }
+      updateStatus(errorMsg, 'error');
+      stopRecording();
+    };
+
+    recognition.onend = () => {
+      if (isRecording) {
+        // If continuous mode and still recording, restart
+        if (continuousEl.checked) {
+          try {
+            recognition.start();
+          } catch (e) {
+            // Already started or error
+            stopRecording();
+          }
+        } else {
+          stopRecording();
+        }
+      }
+    };
+  }
+
+  function startRecording() {
+    if (!recognition) {
+      initRecognition();
+    } else {
+      recognition.lang = langEl.value || 'en-US';
+      recognition.continuous = continuousEl.checked;
+      recognition.interimResults = interimResultsEl.checked;
+    }
+
+    try {
+      recognition.start();
+    } catch (e) {
+      updateStatus('Recognition already started or error occurred.', 'error');
+    }
+  }
+
+  function stopRecording() {
+    if (recognition && isRecording) {
+      recognition.stop();
+    }
+    isRecording = false;
+    recordBtn.textContent = 'Start Recording';
+    recordBtn.classList.remove('recording');
+    recordBtn.querySelector('.recording-indicator').classList.add('hidden');
+    updateStatus('Recording stopped.', 'success');
+  }
+
+  function toggleRecording() {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }
+
+  function updateTranscription() {
+    let text = finalTranscript;
+    if (interimResultsEl.checked && interimTranscript) {
+      text += (text ? ' ' : '') + '<span class="interim">' + interimTranscript + '</span>';
+    }
+    
+    if (text.trim()) {
+      transcriptionEl.innerHTML = text;
+      transcriptionEl.classList.remove('empty');
+    } else {
+      transcriptionEl.textContent = 'No transcription yet. Click "Start Recording" to begin.';
+      transcriptionEl.classList.add('empty');
+    }
+  }
+
+  function updateStatus(message, type) {
+    statusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
+  }
+
+  function clearTranscription() {
+    finalTranscript = '';
+    interimTranscript = '';
+    updateTranscription();
+    updateStatus('Transcription cleared.', 'info');
+  }
+
+  async function copyToClipboard() {
+    const text = finalTranscript.trim() || transcriptionEl.textContent.trim();
+    if (!text || text === 'No transcription yet. Click "Start Recording" to begin.') {
+      updateStatus('Nothing to copy.', 'error');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+      updateStatus('Copied to clipboard!', 'success');
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        updateStatus('Copied to clipboard!', 'success');
+      } catch (e) {
+        updateStatus('Failed to copy. Please select and copy manually.', 'error');
+      }
+      document.body.removeChild(textArea);
+    }
+  }
+
+  // Populate language dropdown
+  const languages = [
+    { code: 'en-US', name: 'English (US)' },
+    { code: 'en-GB', name: 'English (UK)' },
+    { code: 'es-ES', name: 'Spanish (Spain)' },
+    { code: 'es-MX', name: 'Spanish (Mexico)' },
+    { code: 'fr-FR', name: 'French (France)' },
+    { code: 'de-DE', name: 'German' },
+    { code: 'it-IT', name: 'Italian' },
+    { code: 'pt-BR', name: 'Portuguese (Brazil)' },
+    { code: 'ja-JP', name: 'Japanese' },
+    { code: 'ko-KR', name: 'Korean' },
+    { code: 'zh-CN', name: 'Chinese (Simplified)' },
+    { code: 'zh-TW', name: 'Chinese (Traditional)' },
+    { code: 'ru-RU', name: 'Russian' },
+    { code: 'nl-NL', name: 'Dutch' },
+    { code: 'pl-PL', name: 'Polish' },
+    { code: 'ar-SA', name: 'Arabic' },
+    { code: 'hi-IN', name: 'Hindi' },
+  ];
+
+  langEl.innerHTML = languages.map(lang => 
+    `<option value="${lang.code}">${lang.name}</option>`
+  ).join('');
+
+  // Set default to en-US
+  langEl.value = 'en-US';
+
+  // Event listeners
+  recordBtn.addEventListener('click', toggleRecording);
+  clearBtn.addEventListener('click', clearTranscription);
+  copyBtn.addEventListener('click', copyToClipboard);
+
+  // Update recognition settings when changed (but only if not recording)
+  langEl.addEventListener('change', () => {
+    if (recognition && !isRecording) {
+      recognition.lang = langEl.value;
+    }
+  });
+
+  continuousEl.addEventListener('change', () => {
+    if (recognition && !isRecording) {
+      recognition.continuous = continuousEl.checked;
+    }
+  });
+
+  interimResultsEl.addEventListener('change', () => {
+    if (recognition && !isRecording) {
+      recognition.interimResults = interimResultsEl.checked;
+    }
+    updateTranscription(); // Update display immediately
+  });
+
+  // Initialize
+  updateStatus('Ready to record. Click "Start Recording" to begin.', 'info');
+})();
+</script>
+
+</body>
+</html>
