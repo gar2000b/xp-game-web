@@ -43,6 +43,26 @@
             top: 0;
             left: 0;
             background: #000;
+            /* Disable text/image selection and dragging */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        /* Disable selection and dragging for all game screen children */
+        #game-screen * {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
         }
         
         #game-screen.active {
@@ -242,6 +262,7 @@
             image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
             visibility: hidden; /* Hidden until game initializes */
+            pointer-events: none; /* Prevent image dragging */
         }
         
         /* AI Bot Sprites (created dynamically) */
@@ -251,6 +272,7 @@
             image-rendering: pixelated;
             image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
+            pointer-events: none; /* Prevent image dragging */
         }
         
     </style>
@@ -283,7 +305,7 @@
     <!-- Game Screen -->
     <div id="game-screen">
         <div id="game-stars"></div>
-        <img id="taxi-sprite" src="assets/taxi.png" alt="Taxi">
+        <img id="taxi-sprite" src="assets/taxi.png" alt="Taxi" draggable="false">
         <!-- AI bots are created dynamically -->
     </div>
     
@@ -291,10 +313,25 @@
     <script src="js/game-screen.js"></script>
     <script src="js/game.js"></script>
     
-    <!-- Disable browser context menu (right-click menu) and add fullscreen toggle -->
+    <!-- Disable browser context menu (right-click menu), selection, dragging, and add fullscreen toggle -->
     <script>
         document.addEventListener('contextmenu', (event) => {
             event.preventDefault();
+        });
+        
+        // Prevent image/text dragging and selection on game screen
+        document.addEventListener('dragstart', (event) => {
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen && gameScreen.classList.contains('active')) {
+                event.preventDefault();
+            }
+        });
+        
+        document.addEventListener('selectstart', (event) => {
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen && gameScreen.classList.contains('active')) {
+                event.preventDefault();
+            }
         });
         
         // Fullscreen toggle on 'f' key

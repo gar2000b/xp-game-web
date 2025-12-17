@@ -402,6 +402,7 @@ function initGame() {
                 aiBotSprite.src = 'assets/ai.png';
                 aiBotSprite.alt = `AI Bot ${i + 1}`;
                 aiBotSprite.className = 'ai-bot-sprite';
+                aiBotSprite.draggable = false; // Prevent image dragging
                 aiBotSprite.style.position = 'absolute';
                 aiBotSprite.style.zIndex = '9';
                 aiBotSprite.style.imageRendering = 'pixelated';
