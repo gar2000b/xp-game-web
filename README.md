@@ -21,7 +21,7 @@ A retro 80s arcade-style web application built with Node.js and Fastify, featuri
 
 1. Clone the repository or navigate to the project directory:
    ```bash
-   cd xp-game-web
+   cd xp-game-server
    ```
 
 2. Install dependencies:
@@ -48,7 +48,7 @@ The server will start on `http://localhost:3000`
 ## Project Structure
 
 ```
-xp-game-web/
+xp-game-server/
 ├── index.js              # Main server file
 ├── package.json          # Project dependencies and scripts
 ├── public/              # Static files directory
