@@ -56,13 +56,15 @@ function initAudio() {
     }
     
     // Resume audio context if suspended (browser autoplay policy)
+    // Note: We don't await here since this is called during initialization
+    // The actual sound functions will await resume() when needed
     if (audioContext.state === 'suspended') {
         audioContext.resume();
     }
 }
 
 // Play coin sound using pre-generated buffer (instant playback)
-function playCoinSound() {
+async function playCoinSound() {
     if (!audioContext || !coinSoundBuffer) {
         initAudio();
         // If still not ready, try again on next frame
@@ -72,9 +74,9 @@ function playCoinSound() {
         }
     }
     
-    // Resume if suspended
+    // Resume if suspended - await to ensure context is ready before playing
     if (audioContext.state === 'suspended') {
-        audioContext.resume();
+        await audioContext.resume();
     }
     
     // Create buffer source for instant playback
@@ -90,14 +92,14 @@ function playCoinSound() {
 }
 
 // Play space intro tune (3 seconds)
-function playSpaceIntro() {
+async function playSpaceIntro() {
     if (!audioContext) {
         initAudio();
     }
     
-    // Resume if suspended
+    // Resume if suspended - await to ensure context is ready before playing
     if (audioContext.state === 'suspended') {
-        audioContext.resume();
+        await audioContext.resume();
     }
     
     const now = audioContext.currentTime;

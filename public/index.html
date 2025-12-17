@@ -20,6 +20,8 @@
             overflow: hidden;
             height: 100vh;
             position: relative;
+            /* Retro arcade crosshair cursor - pixelated style */
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect x="7" y="0" width="2" height="6" fill="%2300ff00"/><rect x="7" y="10" width="2" height="6" fill="%2300ff00"/><rect x="0" y="7" width="6" height="2" fill="%2300ff00"/><rect x="10" y="7" width="6" height="2" fill="%2300ff00"/><rect x="6" y="6" width="4" height="4" fill="none" stroke="%2300ff00" stroke-width="1"/><rect x="7" y="7" width="2" height="2" fill="%2300ff00"/></svg>') 8 8, crosshair;
         }
         
         #start-screen {
@@ -235,13 +237,11 @@
         /* Taxi Sprite */
         #taxi-sprite {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
             z-index: 10;
             image-rendering: pixelated;
             image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
+            visibility: hidden; /* Hidden until game initializes */
         }
         
     </style>
@@ -280,5 +280,46 @@
     <script src="js/start-screen.js"></script>
     <script src="js/game-screen.js"></script>
     <script src="js/game.js"></script>
+    
+    <!-- Disable browser context menu (right-click menu) and add fullscreen toggle -->
+    <script>
+        document.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+        });
+        
+        // Fullscreen toggle on 'f' key
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'f' || event.key === 'F') {
+                event.preventDefault();
+                toggleFullscreen();
+            }
+        });
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                // Enter fullscreen
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) { // Safari
+                    document.documentElement.webkitRequestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) { // IE/Edge
+                    document.documentElement.msRequestFullscreen();
+                } else if (document.documentElement.mozRequestFullScreen) { // Firefox
+                    document.documentElement.mozRequestFullScreen();
+                }
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { // Safari
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { // IE/Edge
+                    document.msExitFullscreen();
+                } else if (document.mozCancelFullScreen) { // Firefox
+                    document.mozCancelFullScreen();
+                }
+            }
+        }
+    </script>
 </body>
 </html>
